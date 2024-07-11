@@ -2,6 +2,7 @@ const { nanoid } = require('nanoid');
 const { Pool } = require('pg');
 const InvariantError = require('../../exceptions/InvariantError');
 const NotFoundError = require('../../exceptions/NotFoundError');
+const { mapSongDBToShortModel } = require('../../utils');
 
 class AlbumsService {
   constructor() {
@@ -35,14 +36,22 @@ class AlbumsService {
       text: 'SELECT * FROM albums WHERE id = $1',
       values: [id],
     };
-
     const result = await this._pool.query(query);
 
     if (!result.rows.length) {
       throw new NotFoundError('Album tidak ditemukan');
     }
 
-    return result.rows[0];
+    const songsQuery = {
+      text: 'SELECT * FROM songs WHERE album_id = $1',
+      values: [id],
+    };
+    const songsResult = await this._pool.query(songsQuery);
+
+    return {
+      ...result.rows[0],
+      songs: songsResult.rows.map(mapSongDBToShortModel),
+    };
   }
 
   async editAlbumById(id, { name, year }) {
@@ -67,7 +76,7 @@ class AlbumsService {
     const result = await this._pool.query(query);
 
     if (!result.rows.length) {
-      throw new NotFoundError('Catatan gagal dihapus. Id tidak ditemukan');
+      throw new NotFoundError('Album gagal dihapus. Id tidak ditemukan');
     }
   }
 }
