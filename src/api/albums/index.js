@@ -8,4 +8,4 @@ module.exports = {
     const handler = new AlbumsHandler(service, validator);
     server.route(routes(handler));
   },
-}
+};
