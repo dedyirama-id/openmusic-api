@@ -41,21 +41,11 @@ class SongsService {
 
     const result = await this._pool.query(query);
 
-    if (!result.rows.length) {
+    if (!result.rowCount) {
       throw new NotFoundError('Lagu tidak ditemukan');
     }
 
-    return result.rows.map(mapSongDBToFullModel)[0];
-  }
-
-  async getSongsByAlbumId(albumId) {
-    const query = {
-      text: 'SELECT * FROM songs WHERE album_id = $1',
-      values: [albumId],
-    };
-
-    const result = await this._pool.query(query);
-    return result.rows.map(mapSongDBToShortModel);
+    return mapSongDBToFullModel(result.rows[0]);
   }
 
   async editSongById(id, {
@@ -68,7 +58,7 @@ class SongsService {
 
     const result = await this._pool.query(query);
 
-    if (!result.rows.length) {
+    if (!result.rowCount) {
       throw new NotFoundError('Gagal memperbarui lagu. Id tidak ditemukan');
     }
   }
@@ -81,7 +71,7 @@ class SongsService {
 
     const result = await this._pool.query(query);
 
-    if (!result.rows.length) {
+    if (!result.rowCount) {
       throw new NotFoundError('Lagu gagal dihapus. Id tidak ditemukan');
     }
   }
