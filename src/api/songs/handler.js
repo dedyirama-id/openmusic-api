@@ -24,8 +24,23 @@ class SongsHandler {
     return response;
   }
 
-  async getSongsHandler() {
-    const songs = await this._service.getSongs();
+  async getSongsHandler(request) {
+    const { title, performer } = request.query;
+
+    let songs = await this._service.getSongs();
+
+    if (title) {
+      songs = songs.filter((song) => song.title
+        .toLowerCase()
+        .includes(title.toLowerCase()));
+    }
+
+    if (performer) {
+      songs = songs.filter((song) => song.performer
+        .toLowerCase()
+        .includes(performer.toLowerCase()));
+    }
+
     return {
       status: 'success',
       data: {

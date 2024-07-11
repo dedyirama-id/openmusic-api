@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 const mapSongDBToShortModel = ({ id, title, performer }) => ({
   id,
   title,

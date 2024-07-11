@@ -48,13 +48,13 @@ class SongsService {
     return result.rows.map(mapSongDBToFullModel)[0];
   }
 
-  getSongsByAlbumId(albumId) {
+  async getSongsByAlbumId(albumId) {
     const query = {
       text: 'SELECT * FROM songs WHERE album_id = $1',
       values: [albumId],
     };
 
-    const result = this._pool.query(query);
+    const result = await this._pool.query(query);
     return result.rows.map(mapSongDBToShortModel);
   }
 
