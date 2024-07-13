@@ -8,7 +8,7 @@
     "start:dev": "nodemon ./src/server.js",
     "lint": "eslint ./src",
     "lint-fix": "eslint ./src --fix",
-    "test": "newman run ./test/postman_collection.json -e ./test/postman_environment.json",
+    "test": "newman run ./test/open-music-api.postman_collection.json -e ./test/open-music-api.postman_environment.json",
     "migrate": "node-pg-migrate"
   },
   "keywords": [],
@@ -24,6 +24,7 @@
   "dependencies": {
     "@hapi/hapi": "^21.3.2",
     "auto-bind": "^4.0.0",
+    "bcrypt": "^5.1.1",
     "dotenv": "^16.4.5",
     "joi": "^17.13.3",
     "nanoid": "^3.1.20",
