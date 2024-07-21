@@ -18,10 +18,6 @@ exports.up = (pgm) => {
       type: 'TEXT',
       notNull: true,
     },
-    username: {
-      type: 'VARCHAR(50)',
-      notNull: true,
-    },
     owner: {
       type: 'VARCHAR(50)',
       notNull: true,

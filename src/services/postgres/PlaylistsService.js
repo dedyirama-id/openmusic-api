@@ -6,19 +6,16 @@ const { mapPlaylistDBToModel } = require('../../utils');
 const AuthorizationError = require('../../exceptions/AuthorizationError');
 
 class PlaylistsService {
-  constructor(usersService, songsService) {
+  constructor() {
     this._pool = new Pool();
-    this._usersService = usersService;
-    this._songsService = songsService;
   }
 
   async addPlaylist({ name, owner }) {
-    const { username } = await this._usersService.getUserById(owner);
     const id = `playlist-${nanoid(16)}`;
 
     const query = {
-      text: 'INSERT INTO playlists VALUES($1, $2, $3, $4) RETURNING id',
-      values: [id, name, username, owner],
+      text: 'INSERT INTO playlists VALUES($1, $2, $3) RETURNING id',
+      values: [id, name, owner],
     };
 
     const result = await this._pool.query(query);
@@ -32,7 +29,12 @@ class PlaylistsService {
 
   async getPlaylists(owner) {
     const query = {
-      text: 'SELECT * FROM playlists WHERE owner = $1',
+      text: `
+        SELECT playlists.*, users.username
+        FROM playlists
+        JOIN users ON playlists.owner = users.id
+        WHERE playlists.owner = $1
+      `,
       values: [owner],
     };
 
@@ -42,7 +44,12 @@ class PlaylistsService {
 
   async getPlaylistById(id) {
     const query = {
-      text: 'SELECT * FROM playlists WHERE id = $1',
+      text: `
+        SELECT playlists.*, users.username
+        FROM playlists
+        JOIN users ON playlists.owner = users.id
+        WHERE playlists.id = $1
+      `,
       values: [id],
     };
 
@@ -82,6 +89,45 @@ class PlaylistsService {
     const playlist = result.rows[0];
     if (playlist.owner !== owner) {
       throw new AuthorizationError('Anda tidak berhak mengakses resource ini');
+    }
+  }
+
+  async addSongToPlaylist(songId, playlistId) {
+    const id = `playlist_song-${nanoid(16)}`;
+    const query = {
+      text: 'INSERT INTO playlists_songs VALUES($1, $2, $3) RETURNING id',
+      values: [id, playlistId, songId],
+    };
+
+    const result = await this._pool.query(query);
+    if (!result.rows[0].id) {
+      throw new InvariantError('Lagu gagal ditambahkan ke dalam playlist');
+    }
+  }
+
+  async getSongsInPlaylistById(playlistId) {
+    const query = {
+      text: `
+        SELECT songs.*
+        FROM playlists_songs
+        JOIN songs ON playlists_songs.song_id = songs.id
+        WHERE playlists_songs.playlist_id = $1
+      `,
+      values: [playlistId],
+    };
+    const result = await this._pool.query(query);
+    return result.rows;
+  }
+
+  async deleteSongFromPlaylistById(songId, playlistId) {
+    const query = {
+      text: 'DELETE FROM playlists_songs WHERE playlist_id = $1 AND song_id = $2 RETURNING song_id',
+      values: [playlistId, songId],
+    };
+
+    const result = await this._pool.query(query);
+    if (!result.rowCount) {
+      throw new InvariantError('Lagu gagal dihapus dari playlist');
     }
   }
 }
