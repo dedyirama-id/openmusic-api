@@ -6,8 +6,9 @@ const { mapPlaylistDBToModel } = require('../../utils');
 const AuthorizationError = require('../../exceptions/AuthorizationError');
 
 class PlaylistsService {
-  constructor() {
+  constructor(collaborationsService) {
     this._pool = new Pool();
+    this._collaborationsService = collaborationsService;
   }
 
   async addPlaylist({ name, owner }) {
@@ -30,11 +31,13 @@ class PlaylistsService {
   async getPlaylists(owner) {
     const query = {
       text: `
-        SELECT playlists.*, users.username
-        FROM playlists
-        JOIN users ON playlists.owner = users.id
-        WHERE playlists.owner = $1
-      `,
+      SELECT playlists.*, users.username
+      FROM playlists
+      LEFT JOIN users ON users.id = playlists.owner
+      LEFT JOIN collaborations ON collaborations.playlist_id = playlists.id
+      WHERE playlists.owner = $1 OR collaborations.user_id = $1
+      GROUP BY playlists.id, users.username
+    `,
       values: [owner],
     };
 
@@ -47,7 +50,7 @@ class PlaylistsService {
       text: `
         SELECT playlists.*, users.username
         FROM playlists
-        JOIN users ON playlists.owner = users.id
+        LEFT JOIN users ON users.id = playlists.owner
         WHERE playlists.id = $1
       `,
       values: [id],
@@ -92,6 +95,22 @@ class PlaylistsService {
     }
   }
 
+  async verifyPlaylistAccess(playlistId, userId) {
+    try {
+      await this.verifyPlaylistOwner(playlistId, userId);
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        throw error;
+      }
+
+      try {
+        await this._collaborationsService.verifyCollaborator(playlistId, userId);
+      } catch {
+        throw error;
+      }
+    }
+  }
+
   async addSongToPlaylist(songId, playlistId) {
     const id = `playlist_song-${nanoid(16)}`;
     const query = {
@@ -110,7 +129,7 @@ class PlaylistsService {
       text: `
         SELECT songs.*
         FROM playlists_songs
-        JOIN songs ON playlists_songs.song_id = songs.id
+        LEFT JOIN songs ON songs.id = playlists_songs.song_id
         WHERE playlists_songs.playlist_id = $1
       `,
       values: [playlistId],

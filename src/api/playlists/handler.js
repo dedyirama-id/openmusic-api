@@ -59,7 +59,7 @@ class PlaylistsHandler {
     const { id: playlistId } = request.params;
     const { songId } = request.payload;
 
-    await this._playlistsService.verifyPlaylistOwner(playlistId, request.auth.credentials.id);
+    await this._playlistsService.verifyPlaylistAccess(playlistId, request.auth.credentials.id);
     await this._songsService.getSongById(songId);
     await this._playlistsService.addSongToPlaylist(songId, playlistId);
 
@@ -73,8 +73,8 @@ class PlaylistsHandler {
 
   async getSongsInPlaylistByIdHandler(request) {
     const { id: playlistId } = request.params;
-    await this._playlistsService.verifyPlaylistOwner(playlistId, request.auth.credentials.id);
 
+    await this._playlistsService.verifyPlaylistAccess(playlistId, request.auth.credentials.id);
     const playlist = await this._playlistsService.getPlaylistById(playlistId);
     const songs = await this._playlistsService.getSongsInPlaylistById(playlistId);
 
@@ -94,9 +94,10 @@ class PlaylistsHandler {
 
     const { id: playlistId } = request.params;
     const { songId } = request.payload;
-    await this._playlistsService.verifyPlaylistOwner(playlistId, request.auth.credentials.id);
 
+    await this._playlistsService.verifyPlaylistAccess(playlistId, request.auth.credentials.id);
     await this._playlistsService.deleteSongFromPlaylistById(songId, playlistId);
+
     return {
       status: 'success',
       message: 'Lagu berhasil dihapus dari playlist',
