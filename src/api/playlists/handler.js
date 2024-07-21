@@ -1,5 +1,5 @@
 const autoBind = require('auto-bind');
-const { mapSongDBToShortModel, mapPlaylistDBToModel } = require('../../utils');
+const { mapSongDBToShortModel, mapPlaylistDBToModel, mapPlaylistActivitiesDBToModel } = require('../../utils');
 
 class PlaylistsHandler {
   constructor(playlistsService, usersService, songsService, validator) {
@@ -58,10 +58,17 @@ class PlaylistsHandler {
 
     const { id: playlistId } = request.params;
     const { songId } = request.payload;
+    const { id: userId } = request.auth.credentials;
 
-    await this._playlistsService.verifyPlaylistAccess(playlistId, request.auth.credentials.id);
+    await this._playlistsService.verifyPlaylistAccess(playlistId, userId);
     await this._songsService.getSongById(songId);
     await this._playlistsService.addSongToPlaylist(songId, playlistId);
+    await this._playlistsService.addPlaylistActivities({
+      playlistId,
+      songId,
+      userId,
+      action: 'add',
+    });
 
     const response = h.response({
       status: 'success',
@@ -94,13 +101,34 @@ class PlaylistsHandler {
 
     const { id: playlistId } = request.params;
     const { songId } = request.payload;
+    const { id: userId } = request.auth.credentials;
 
-    await this._playlistsService.verifyPlaylistAccess(playlistId, request.auth.credentials.id);
+    await this._playlistsService.verifyPlaylistAccess(playlistId, userId);
     await this._playlistsService.deleteSongFromPlaylistById(songId, playlistId);
+    await this._playlistsService.addPlaylistActivities({
+      playlistId,
+      songId,
+      userId,
+      action: 'delete',
+    });
 
     return {
       status: 'success',
       message: 'Lagu berhasil dihapus dari playlist',
+    };
+  }
+
+  async getPlaylistActivitiesByIdHandler(request) {
+    const { id: playlistId } = request.params;
+    await this._playlistsService.verifyPlaylistAccess(playlistId, request.auth.credentials.id);
+
+    const activities = await this._playlistsService.getPlaylistActivitiesById(playlistId);
+    return {
+      status: 'success',
+      data: {
+        playlistId,
+        activities: activities.map(mapPlaylistActivitiesDBToModel),
+      },
     };
   }
 }

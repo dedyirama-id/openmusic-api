@@ -149,6 +149,39 @@ class PlaylistsService {
       throw new InvariantError('Lagu gagal dihapus dari playlist');
     }
   }
+
+  async addPlaylistActivities({
+    playlistId, songId, userId, action,
+  }) {
+    const id = `playlist_activity-${nanoid(16)}`;
+    const query = {
+      text: 'INSERT INTO playlist_song_activities VALUES($1, $2, $3, $4, $5, $6) RETURNING id',
+      values: [id, playlistId, songId, userId, action, new Date()],
+    };
+
+    const result = await this._pool.query(query);
+    if (!result.rows[0].id) {
+      throw new InvariantError('Lagu gagal ditambahkan ke dalam playlist');
+    }
+
+    return result.rows[0].id;
+  }
+
+  async getPlaylistActivitiesById(playlistId) {
+    const query = {
+      text: `
+        SELECT playlist_song_activities.*, users.username, songs.title
+        FROM playlist_song_activities
+        LEFT JOIN users ON users.id = playlist_song_activities.user_id
+        LEFT JOIN songs ON songs.id = playlist_song_activities.song_id
+        WHERE playlist_id = $1
+        ORDER BY playlist_song_activities.time
+      `,
+      values: [playlistId],
+    };
+    const result = await this._pool.query(query);
+    return result.rows;
+  }
 }
 
 module.exports = PlaylistsService;
