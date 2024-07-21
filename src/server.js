@@ -131,7 +131,7 @@ const init = async () => {
       return newResponse;
     }
 
-    if (response instanceof Error) {
+    if (response.code === 500) {
       console.log(response);
     }
 
