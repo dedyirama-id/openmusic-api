@@ -89,34 +89,6 @@ class AlbumsService {
     return result.rows[0].cover;
   }
 
-  async removeAlbumCoverById(id) {
-    const query = {
-      text: 'UPDATE albums SET cover = null WHERE id = $1 RETURNING cover',
-      values: [id],
-    };
-
-    const result = await this._pool.query(query);
-    if (!result.rowCount) {
-      throw new NotFoundError('Gagal memperbarui sampul album. Id tidak ditemukan');
-    }
-
-    return result.rows[0].cover;
-  }
-
-  async getAlbumCoverById(id) {
-    const query = {
-      text: 'SELECT cover FROM albums WHERE id = $1',
-      values: [id],
-    };
-
-    const result = await this._pool.query(query);
-    if (!result.rowCount) {
-      throw new NotFoundError('Album tidak ditemukan');
-    }
-
-    return result.rows[0].cover;
-  }
-
   async addAlbumLike(albumId, userId) {
     await this.verifyUserAlbumLike(albumId, userId);
 

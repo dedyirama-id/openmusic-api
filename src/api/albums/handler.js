@@ -1,5 +1,6 @@
 const autoBind = require('auto-bind');
 const path = require('path');
+const config = require('../../utils/config');
 
 class AlbumsHandler {
   constructor(albumsService, storageService, cacheService, validator) {
@@ -80,7 +81,7 @@ class AlbumsHandler {
     const filename = `${id}${path.extname(cover.hapi.filename)}`;
 
     await this._storageService.writeFile(cover, filename);
-    const newCoverUrl = `http://${process.env.HOST}:${process.env.PORT}/statics/images/${filename}`;
+    const newCoverUrl = `http://${config.app.host}:${config.app.port}/statics/images/${filename}`;
 
     await this._albumsService.updateAlbumCoverById(id, newCoverUrl);
     await this._cacheService.delete(`albums:${id}`);
