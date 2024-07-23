@@ -7,6 +7,7 @@ module.exports = {
   register: async (server, {
     collaborationsService, playlistsService, usersService, cacheService, validator,
   }) => {
+    // eslint-disable-next-line max-len
     const collaborationsHandler = new CollaborationsHandler(collaborationsService, playlistsService, usersService, cacheService, validator);
     server.route(routes(collaborationsHandler));
   },
