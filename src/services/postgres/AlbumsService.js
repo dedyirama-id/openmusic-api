@@ -2,7 +2,7 @@ const { nanoid } = require('nanoid');
 const { Pool } = require('pg');
 const InvariantError = require('../../exceptions/InvariantError');
 const NotFoundError = require('../../exceptions/NotFoundError');
-const { mapSongDBToShortModel } = require('../../utils');
+const { mapSongDBToShortModel, mapAlbumDBToModel } = require('../../utils');
 
 class AlbumsService {
   constructor() {
@@ -44,7 +44,7 @@ class AlbumsService {
     const songsResult = await this._pool.query(songsQuery);
 
     return {
-      ...result.rows[0],
+      ...mapAlbumDBToModel(result.rows[0]),
       songs: songsResult.rows.map(mapSongDBToShortModel),
     };
   }
@@ -73,6 +73,48 @@ class AlbumsService {
     if (!result.rowCount) {
       throw new NotFoundError('Album gagal dihapus. Id tidak ditemukan');
     }
+  }
+
+  async updateAlbumCoverById(id, coverUrl) {
+    const query = {
+      text: 'UPDATE albums SET cover = $1 WHERE id = $2 RETURNING cover',
+      values: [coverUrl, id],
+    };
+
+    const result = await this._pool.query(query);
+    if (!result.rowCount) {
+      throw new NotFoundError('Gagal memperbarui sampul album. Id tidak ditemukan');
+    }
+
+    return result.rows[0].cover;
+  }
+
+  async removeAlbumCoverById(id) {
+    const query = {
+      text: 'UPDATE albums SET cover = null WHERE id = $1 RETURNING cover',
+      values: [id],
+    };
+
+    const result = await this._pool.query(query);
+    if (!result.rowCount) {
+      throw new NotFoundError('Gagal memperbarui sampul album. Id tidak ditemukan');
+    }
+
+    return result.rows[0].cover;
+  }
+
+  async getAlbumCoverById(id) {
+    const query = {
+      text: 'SELECT cover FROM albums WHERE id = $1',
+      values: [id],
+    };
+
+    const result = await this._pool.query(query);
+    if (!result.rowCount) {
+      throw new NotFoundError('Album tidak ditemukan');
+    }
+
+    return result.rows[0].cover;
   }
 }
 
