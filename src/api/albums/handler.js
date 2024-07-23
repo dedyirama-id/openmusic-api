@@ -2,9 +2,10 @@ const autoBind = require('auto-bind');
 const path = require('path');
 
 class AlbumsHandler {
-  constructor(albumsService, storageService, validator) {
+  constructor(albumsService, storageService, cacheService, validator) {
     this._albumsService = albumsService;
     this._storageService = storageService;
+    this._cacheService = cacheService;
     this._validator = validator;
 
     autoBind(this);
@@ -87,6 +88,7 @@ class AlbumsHandler {
       message: 'Berhasil menyukai album',
     });
     response.code(201);
+    await this._cacheService.delete(`likes:${albumId}`);
     return response;
   }
 
@@ -94,21 +96,36 @@ class AlbumsHandler {
     const { id: albumId } = request.params;
     const { id: userId } = request.auth.credentials;
     await this._albumsService.deleteAlbumLike(albumId, userId);
+    await this._cacheService.delete(`likes:${albumId}`);
     return {
       status: 'success',
       message: 'Berhasil menghapus album dari daftar menyukai',
     };
   }
 
-  async getAlbumLikesHandler(request) {
+  async getAlbumLikesHandler(request, h) {
     const { id: albumId } = request.params;
-    const likes = await this._albumsService.getAlbumLikes(albumId);
-    return {
-      status: 'success',
-      data: {
-        likes,
-      },
-    };
+
+    try {
+      const likes = JSON.parse(await this._cacheService.get(`likes:${albumId}`));
+      const response = h.response({
+        status: 'success',
+        data: {
+          likes,
+        },
+      });
+      response.header('X-Data-Source', 'cache');
+      return response;
+    } catch (error) {
+      const likes = await this._albumsService.getAlbumLikes(albumId);
+      await this._cacheService.set(`likes:${albumId}`, JSON.stringify(likes), 60 * 30 /* 30 menit */);
+      return {
+        status: 'success',
+        data: {
+          likes,
+        },
+      };
+    }
   }
 }
 
